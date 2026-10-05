@@ -1,0 +1,127 @@
+BAKERY WHOLESALE DISTRIBUTION ROUTE DATABASE
+CONSTRAINT TEST LOG
+Database: new_bakery_distribution
+
+1. NOT NULL CONSTRAINT
+Test:
+INSERT INTO products(product_code, product_name, category, unit_price, shelf_life_days)
+VALUES(NULL, 'Test Bread', 'Bread', 40.00, 3);
+
+Expected result:
+INSERT should fail because product_code is NOT NULL.
+
+Result:
+PASSED - PostgreSQL rejects the NULL value.
+
+2. UNIQUE CONSTRAINT
+Test:
+INSERT INTO products(product_code, product_name, category, unit_price, shelf_life_days)
+VALUES('P001', 'Duplicate Bread', 'Bread', 45.00, 3);
+
+Expected result:
+INSERT should fail because product_code 'P001' already exists.
+
+Result:
+PASSED - PostgreSQL rejects the duplicate value.
+
+3. CHECK CONSTRAINT
+Test:
+INSERT INTO products(product_code, product_name, category, unit_price, shelf_life_days)
+VALUES('P999', 'Invalid Bread', 'Bread', -50.00, 3);
+
+Expected result:
+INSERT should fail because unit_price must be greater than 0.
+
+Result:
+PASSED - PostgreSQL rejects the invalid price.
+
+4. FOREIGN KEY CONSTRAINT
+Test:
+INSERT INTO outlets(outlet_code, outlet_name, address, phone, route_id)
+VALUES('O999', 'Test Outlet', 'Test Address', '9999999999', 9999);
+
+Expected result:
+INSERT should fail because route_id 9999 does not exist.
+
+Result:
+PASSED - PostgreSQL rejects the invalid foreign key.
+
+5. ON DELETE RESTRICT
+Test:
+BEGIN;
+DELETE FROM routes WHERE route_id = 1;
+ROLLBACK;
+
+Expected result:
+DELETE should fail because route 1 is referenced by outlets.
+ROLLBACK is used to end the transaction safely.
+
+Result:
+PASSED - Referenced route cannot be deleted.
+
+6. ON DELETE CASCADE
+Test:
+A temporary outlet and delivery are created, then the outlet is deleted.
+The delivery should be automatically deleted because deliveries use
+ON DELETE CASCADE for outlet_id.
+
+Expected result:
+Deleting the parent outlet automatically deletes related deliveries
+and delivery_items.
+
+Result:
+PASSED - CASCADE behavior verified using a temporary test record and rollback.
+
+7. ON DELETE SET NULL
+Test:
+A temporary route and delivery are created. The route is deleted.
+
+Expected result:
+The related delivery remains, but its route_id becomes NULL.
+
+Result:
+PASSED - SET NULL behavior verified using a temporary test record and rollback.
+
+8. COMPOSITE PRIMARY KEY
+Tables tested:
+delivery_items(delivery_id, product_id)
+return_items(return_id, product_id)
+
+Expected result:
+The same delivery/product or return/product combination cannot be inserted twice.
+
+Result:
+PASSED - Composite primary keys prevent duplicate combinations.
+
+9. DEFAULT CONSTRAINT
+Tables tested:
+deliveries.delivery_status
+returns.return_date
+invoices.invoice_date
+invoices.payment_status
+
+Expected result:
+When a value is omitted, PostgreSQL automatically uses the defined DEFAULT value.
+
+Result:
+PASSED - Default values are defined and available.
+
+10. GENERAL TESTING NOTE
+If a constraint test is executed inside BEGIN/COMMIT and PostgreSQL reports
+SQLSTATE 25P02 (current transaction is aborted), execute:
+
+ROLLBACK;
+
+Then continue with the next test.
+
+CONCLUSION
+The database constraints were designed and tested for:
+- NOT NULL
+- UNIQUE
+- CHECK
+- FOREIGN KEY
+- Composite PRIMARY KEY
+- ON DELETE RESTRICT
+- ON DELETE CASCADE
+- ON DELETE SET NULL
+- DEFAULT values
